@@ -1,21 +1,16 @@
 import ClearIcon from "@mui/icons-material/Clear"
-import PowerIcon from "@mui/icons-material/Power"
 import Autocomplete from "@mui/material/Autocomplete"
-import Box from "@mui/material/Box"
 import IconButton from "@mui/material/IconButton"
 import InputAdornment from "@mui/material/InputAdornment"
 import TextField from "@mui/material/TextField"
-import { useAtom } from "jotai"
+import React from "react"
 import {
   Controller,
-  FormProvider,
-  useForm,
   useFormContext,
   useFormState,
   useWatch,
   type UseFormRegisterReturn,
 } from "react-hook-form"
-import { cogniteSDK } from "../CogniteSDK"
 
 const textFieldRegister = ({ ref, ...rest }: UseFormRegisterReturn) => ({
   ...rest,
@@ -29,21 +24,22 @@ const CLUSTER_URLS = [
   "https://gc-bru-dev-003.cognitedata.com",
 ]
 
-const DEFAULT_CLUSTER_URL = CLUSTER_URLS[0]
+export const DEFAULT_CLUSTER_URL = CLUSTER_URLS[0]
 
-type ConnectFormValues = {
+export type ConnectFormValues = {
   clusterUrl: string
   url: string
   token: string
 }
 
-const URLInput: React.FC = () => {
+export const URLField: React.FC = () => {
   const { register, setValue } = useFormContext<ConnectFormValues>()
   const { errors } = useFormState<ConnectFormValues>({ name: "url" })
   const url = useWatch<ConnectFormValues>({ name: "url" })
 
   return (
     <TextField
+      fullWidth
       label="URL"
       size="small"
       error={!!errors.url}
@@ -84,13 +80,14 @@ const URLInput: React.FC = () => {
   )
 }
 
-const TokenInput: React.FC = () => {
+export const TokenField: React.FC = () => {
   const { register, setValue } = useFormContext<ConnectFormValues>()
   const { errors } = useFormState<ConnectFormValues>({ name: "token" })
   const token = useWatch<ConnectFormValues>({ name: "token" })
 
   return (
     <TextField
+      fullWidth
       label="Token"
       size="small"
       error={!!errors.token}
@@ -123,7 +120,7 @@ const TokenInput: React.FC = () => {
   )
 }
 
-const ClusterURLInput: React.FC = () => {
+export const ClusterURLField: React.FC = () => {
   const { control } = useFormContext<ConnectFormValues>()
 
   return (
@@ -166,61 +163,9 @@ const ClusterURLInput: React.FC = () => {
               inputRef={field.ref}
             />
           )}
+          fullWidth
         />
       )}
     />
-  )
-}
-
-export const ConnectForm: React.FC = () => {
-  const [connectionState] = useAtom(cogniteSDK.state.connectionState)
-  const methods = useForm<ConnectFormValues>({
-    defaultValues: {
-      clusterUrl: DEFAULT_CLUSTER_URL,
-      url: "",
-      token: "",
-    },
-  })
-
-  const onSubmit = ({ clusterUrl, url, token }: ConnectFormValues) => {
-    const urlObj = new URL(url)
-    const appId = urlObj.hostname
-    const project = urlObj.pathname.split('/')[1]
-    void cogniteSDK.connect({ appId, project, oidcToken: token, baseUrl: clusterUrl })
-  }
-
-  return (
-    <FormProvider {...methods}>
-      <Box
-        component="form"
-        onSubmit={methods.handleSubmit(onSubmit)}
-        sx={{
-          display: "flex",
-          gap: 1,
-        }}
-      >
-        <Box
-          sx={{
-            display: "flex",
-            flexGrow: 1,
-            flexDirection: "column",
-            gap: 1,
-          }}
-        >
-          <ClusterURLInput />
-          <URLInput />
-          <TokenInput />
-        </Box>
-
-        <IconButton
-          type="submit"
-          sx={{ alignSelf: "center" }}
-          title={connectionState === "connected" ? "Disconnect" : "Connect"}
-          color={connectionState === "connected" ? "success" : "default"}
-        >
-          <PowerIcon />
-        </IconButton>
-      </Box>
-    </FormProvider>
   )
 }

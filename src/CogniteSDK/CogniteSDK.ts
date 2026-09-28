@@ -1,6 +1,6 @@
 import { CogniteClient } from "@cognite/sdk"
+import { atom, type WritableAtom } from "jotai"
 import { store } from "../store"
-import { atom, type Atom, type WritableAtom } from "jotai"
 /**
 
 connectionState: 'disconnected' | 'connecting' | 'error' | 'connected'
@@ -97,4 +97,4 @@ export class CogniteSDK {
 }
 
 export const cogniteSDK = new CogniteSDK()
-window.CogniteClient = CogniteClient
+window.cogniteSDK = cogniteSDK
