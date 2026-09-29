@@ -1,4 +1,4 @@
-import { CogniteClient } from "@cognite/sdk"
+import { CogniteClient, CogniteError, HttpError } from "@cognite/sdk"
 import { atom, type WritableAtom } from "jotai"
 import { store } from "../store"
 /**
@@ -26,13 +26,15 @@ cogniteClient.state.
  */
 
 export type ConnectionState = 'disconnected' | 'connecting' | 'connected'
-export type RequestState = 'idle' | 'inProgress' | 'success' 
+export type RequestState = 'idle' | 'inProgress' | 'success'
+
+export type CogniteSDKError = CogniteError | HttpError | TypeError
 
 type CogniteClientState = {
   connectionState: WritableAtom<ConnectionState, [ConnectionState], void>
-  connectionError: WritableAtom<Error | undefined, [Error | undefined], void>
+  connectionError: WritableAtom<CogniteSDKError | undefined, [CogniteSDKError | undefined], void>
   requestState: WritableAtom<RequestState, [RequestState], void>
-  requestError: WritableAtom<Error | undefined, [Error | undefined], void>
+  requestError: WritableAtom<CogniteSDKError | undefined, [CogniteSDKError | undefined], void>
 }
 
 export class CogniteSDK {
@@ -50,9 +52,9 @@ export class CogniteSDK {
   constructor() {
     this.state = {
       connectionState: atom<ConnectionState>('disconnected'),
-      connectionError: atom<Error | undefined>(undefined),
+      connectionError: atom<CogniteSDKError | undefined>(undefined),
       requestState: atom<RequestState>('idle'),
-      requestError: atom<Error | undefined>(undefined),
+      requestError: atom<CogniteSDKError | undefined>(undefined),
     }
   }
 
@@ -80,21 +82,22 @@ export class CogniteSDK {
       store.set(this.state.connectionError, undefined)
 
       await this.cogniteClient.authenticate()
+      // authenticate doesn't throw an error, so we need to check the error type
+      await this.cogniteClient.containers.list({ includeGlobal: true })
 
-      const containersList = await this.cogniteClient.containers.list({includeGlobal: true})
-      if (containersList.items !== undefined) {
-        store.set(this.state.connectionState, 'connected')
-      } else {
-        throw new Error('No containers found')
-      }
+      store.set(this.state.connectionState, 'connected')
     } catch (error) {
       store.set(this.state.connectionState, 'disconnected')
-      store.set(this.state.connectionError, error as Error)
+      store.set(this.state.connectionError, error as CogniteSDKError)
     }
   }
 
   disconnect() {
-    // TODO
+    this.cogniteClient_ = undefined
+    store.set(this.state.connectionState, 'disconnected')
+    store.set(this.state.connectionError, undefined)
+    store.set(this.state.requestState, 'idle')
+    store.set(this.state.requestError, undefined)
   }
 }
 

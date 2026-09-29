@@ -14,7 +14,7 @@ import { store } from './store'
 import { ConnectionForm } from './components/ConnectionForm'
 
 const LEFT_SIDEBAR_WIDTH = 280
-const RIGHT_SIDEBAR_WIDTH = 320
+const RIGHT_SIDEBAR_WIDTH = 420
 
 const drawerPaperSx = (width: number) => ({
   width,

@@ -1,1 +1,1 @@
-export { CogniteSDK, cogniteSDK, type ConnectionState, type RequestState } from './CogniteSDK'
+export { CogniteSDK, cogniteSDK, type ConnectionState, type RequestState, type CogniteSDKError } from './CogniteSDK'

@@ -12,31 +12,32 @@ import {
   type UseFormRegisterReturn,
 } from "react-hook-form"
 import type { ConnectionFormState } from "./types"
+import { useAtom } from "jotai"
+import { cogniteSDK } from "../../CogniteSDK"
 
 const textFieldRegister = ({ ref, ...rest }: UseFormRegisterReturn) => ({
   ...rest,
   inputRef: ref,
 })
 
-const CLUSTER_URLS = [
-  "https://api.cognitedata.com",
-  "https://aws-dub-dev.cognitedata.com",
-  "https://az-arn-dev-002.cognitedata.com",
-  "https://gc-bru-dev-003.cognitedata.com",
-]
-
-export const DEFAULT_CLUSTER_URL = CLUSTER_URLS[0]
+function useCogniteSDKIsBusy() {
+  const [connectionState] = useAtom(cogniteSDK.state.connectionState)
+  return connectionState === 'connected' || connectionState === 'connecting'
+}
 
 export const URLField: React.FC = () => {
   const { register, setValue } = useFormContext<ConnectionFormState>()
   const { errors } = useFormState<ConnectionFormState>({ name: "url" })
   const url = useWatch<ConnectionFormState>({ name: "url" })
 
+  const isCogniteSDKBusy = useCogniteSDKIsBusy()
+
   return (
     <TextField
       fullWidth
       label="URL"
       size="small"
+      disabled={isCogniteSDKBusy}
       error={!!errors.url}
       {...textFieldRegister(
         register("url", {
@@ -56,6 +57,7 @@ export const URLField: React.FC = () => {
           endAdornment: url ? (
             <InputAdornment position="end">
               <IconButton
+                disabled={isCogniteSDKBusy}
                 type="button"
                 aria-label="Clear"
                 edge="end"
@@ -79,11 +81,15 @@ export const TokenField: React.FC = () => {
   const { errors } = useFormState<ConnectionFormState>({ name: "token" })
   const token = useWatch<ConnectionFormState>({ name: "token" })
 
+  const isCogniteSDKBusy = useCogniteSDKIsBusy()
+
   return (
     <TextField
       fullWidth
       label="Token"
       size="small"
+      autoComplete="off"
+      disabled={isCogniteSDKBusy}
       error={!!errors.token}
       {...textFieldRegister(
         register("token", {
@@ -95,6 +101,7 @@ export const TokenField: React.FC = () => {
           endAdornment: token ? (
             <InputAdornment position="end">
               <IconButton
+                disabled={isCogniteSDKBusy}
                 type="button"
                 aria-label="Clear"
                 edge="end"
@@ -113,13 +120,25 @@ export const TokenField: React.FC = () => {
   )
 }
 
+const CLUSTER_URLS = [
+  "https://api.cognitedata.com",
+  "https://aws-dub-dev.cognitedata.com",
+  "https://az-arn-dev-002.cognitedata.com",
+  "https://gc-bru-dev-003.cognitedata.com",
+]
+
+export const DEFAULT_CLUSTER_URL = CLUSTER_URLS[0]
+
 export const ClusterURLField: React.FC = () => {
   const { control } = useFormContext<ConnectionFormState>()
+
+  const isCogniteSDKBusy = useCogniteSDKIsBusy()
 
   return (
     <Controller
       name="clusterUrl"
       control={control}
+      disabled={isCogniteSDKBusy}
       rules={{
         required: "Cluster URL is required",
         validate: (value) => {
@@ -135,6 +154,7 @@ export const ClusterURLField: React.FC = () => {
         <Autocomplete
           freeSolo
           forcePopupIcon
+          disabled={isCogniteSDKBusy}
           options={CLUSTER_URLS}
           value={field.value}
           onChange={(_event, option) => {
