@@ -26,6 +26,8 @@ function useCogniteSDKIsBusy() {
 }
 
 export const URLField: React.FC = () => {
+  "use no memo";
+
   const { register, setValue } = useFormContext<ConnectionFormState>()
   const { errors } = useFormState<ConnectionFormState>({ name: "url" })
   const url = useWatch<ConnectionFormState>({ name: "url" })
@@ -77,9 +79,12 @@ export const URLField: React.FC = () => {
 }
 
 export const TokenField: React.FC = () => {
-  const { register, setValue } = useFormContext<ConnectionFormState>()
+  "use no memo";
+
+  const { register, setValue, watch } = useFormContext<ConnectionFormState>()
   const { errors } = useFormState<ConnectionFormState>({ name: "token" })
-  const token = useWatch<ConnectionFormState>({ name: "token" })
+  // const token = useWatch<ConnectionFormState>({ name: "token" })
+  const token = watch("token")
 
   const isCogniteSDKBusy = useCogniteSDKIsBusy()
 

@@ -24,11 +24,6 @@ const drawerPaperSx = (width: number) => ({
 })
 
 function App() {
-  React.useEffect(() => {
-    console.log('cogniteSDK', cogniteSDK)
-    // cogniteSDK.connect({ appId: 'my-app-id', project: 'my-project', oidcToken: 'my-oidc-token' })
-  }, [])
-
   return (
     <>
       <CssBaseline />

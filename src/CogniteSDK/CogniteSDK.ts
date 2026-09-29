@@ -1,29 +1,6 @@
 import { CogniteClient, CogniteError, HttpError } from "@cognite/sdk"
 import { atom, type WritableAtom } from "jotai"
 import { store } from "../store"
-/**
-
-connectionState: 'disconnected' | 'connecting' | 'error' | 'connected'
-lastConnectionError: Error | null
-requestState: 'idle' | 'pending' | 'success' | 'error'
-lastRequestError: Error | null
-
-cogniteSdkMethods
-
-trackingMethods being called
-
-
-
-
-# API:
-
-cogniteClient.connect({appId, projectId, oidcToken})
-
-cogniteClient.sdkMethods.
-
-cogniteClient.state.
-
- */
 
 export type ConnectionState = 'disconnected' | 'connecting' | 'connected'
 export type RequestState = 'idle' | 'inProgress' | 'success'
