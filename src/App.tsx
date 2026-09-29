@@ -11,7 +11,7 @@ import { cogniteSDK } from './CogniteSDK'
 import React from 'react'
 import { Provider } from 'jotai'
 import { store } from './store'
-import { ConnectForm } from './components/ConnectForm'
+import { ConnectionForm } from './components/ConnectionForm'
 
 const LEFT_SIDEBAR_WIDTH = 280
 const RIGHT_SIDEBAR_WIDTH = 320
@@ -82,7 +82,7 @@ function App() {
             }}
           >
             <Box component="aside" aria-label="Right sidebar" sx={{ p: 2 }}>
-              <ConnectForm />
+              <ConnectionForm />
             </Box>
           </Drawer>
         </Stack>

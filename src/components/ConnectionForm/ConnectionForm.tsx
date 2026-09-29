@@ -11,7 +11,7 @@ import {
   DEFAULT_CLUSTER_URL,
   TokenField,
   URLField,
-  type ConnectFormValues,
+  type ConnectionFormValues,
 } from "./fields"
 import Alert from "@mui/material/Alert"
 
@@ -25,11 +25,11 @@ function getButtonColor(connectionState: ConnectionState, connectionError: Error
   return 'default'
 }
 
-export const ConnectForm: React.FC = () => {
+export const ConnectionForm: React.FC = () => {
   const [connectionState] = useAtom(cogniteSDK.state.connectionState)
   const [connectionError] = useAtom(cogniteSDK.state.connectionError)
 
-  const methods = useForm<ConnectFormValues>({
+  const methods = useForm<ConnectionFormValues>({
     defaultValues: {
       clusterUrl: DEFAULT_CLUSTER_URL,
       url: "",
@@ -37,7 +37,7 @@ export const ConnectForm: React.FC = () => {
     },
   })
 
-  const onSubmit = ({ clusterUrl, url, token }: ConnectFormValues) => {
+  const onSubmit = ({ clusterUrl, url, token }: ConnectionFormValues) => {
     const urlObj = new URL(url)
     const appId = urlObj.hostname
     const project = urlObj.pathname.split('/')[1]
