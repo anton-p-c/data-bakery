@@ -43,7 +43,6 @@ export const URLField: React.FC = () => {
       label="URL"
       size="small"
       error={!!errors.url}
-      helperText={errors.url?.message}
       {...textFieldRegister(
         register("url", {
           required: "URL is required",
@@ -91,7 +90,6 @@ export const TokenField: React.FC = () => {
       label="Token"
       size="small"
       error={!!errors.token}
-      helperText={errors.token?.message}
       {...textFieldRegister(
         register("token", {
           required: "Token is required",
@@ -159,7 +157,6 @@ export const ClusterURLField: React.FC = () => {
               label="Cluster URL"
               size="small"
               error={!!error}
-              helperText={error?.message}
               inputRef={field.ref}
             />
           )}

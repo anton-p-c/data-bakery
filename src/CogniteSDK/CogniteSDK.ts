@@ -25,14 +25,14 @@ cogniteClient.state.
 
  */
 
-type ConnectionState = 'disconnected' | 'connecting' | 'connected'
-type RequestState = 'idle' | 'pending' | 'success' 
+export type ConnectionState = 'disconnected' | 'connecting' | 'connected'
+export type RequestState = 'idle' | 'inProgress' | 'success' 
 
 type CogniteClientState = {
   connectionState: WritableAtom<ConnectionState, [ConnectionState], void>
-  lastConnectionError: WritableAtom<Error | undefined, [Error | undefined], void>
+  connectionError: WritableAtom<Error | undefined, [Error | undefined], void>
   requestState: WritableAtom<RequestState, [RequestState], void>
-  lastRequestError: WritableAtom<Error | undefined, [Error | undefined], void>
+  requestError: WritableAtom<Error | undefined, [Error | undefined], void>
 }
 
 export class CogniteSDK {
@@ -50,9 +50,9 @@ export class CogniteSDK {
   constructor() {
     this.state = {
       connectionState: atom<ConnectionState>('disconnected'),
-      lastConnectionError: atom<Error | undefined>(undefined),
+      connectionError: atom<Error | undefined>(undefined),
       requestState: atom<RequestState>('idle'),
-      lastRequestError: atom<Error | undefined>(undefined),
+      requestError: atom<Error | undefined>(undefined),
     }
   }
 
@@ -77,6 +77,8 @@ export class CogniteSDK {
     })
 
     try {
+      store.set(this.state.connectionError, undefined)
+
       await this.cogniteClient.authenticate()
 
       const containersList = await this.cogniteClient.containers.list({includeGlobal: true})
@@ -87,7 +89,7 @@ export class CogniteSDK {
       }
     } catch (error) {
       store.set(this.state.connectionState, 'disconnected')
-      store.set(this.state.lastConnectionError, error as Error)
+      store.set(this.state.connectionError, error as Error)
     }
   }
 
