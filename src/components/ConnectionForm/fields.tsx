@@ -11,6 +11,7 @@ import {
   useWatch,
   type UseFormRegisterReturn,
 } from "react-hook-form"
+import type { ConnectionFormState } from "./types"
 
 const textFieldRegister = ({ ref, ...rest }: UseFormRegisterReturn) => ({
   ...rest,
@@ -26,16 +27,10 @@ const CLUSTER_URLS = [
 
 export const DEFAULT_CLUSTER_URL = CLUSTER_URLS[0]
 
-export type ConnectionFormValues = {
-  clusterUrl: string
-  url: string
-  token: string
-}
-
 export const URLField: React.FC = () => {
-  const { register, setValue } = useFormContext<ConnectionFormValues>()
-  const { errors } = useFormState<ConnectionFormValues>({ name: "url" })
-  const url = useWatch<ConnectionFormValues>({ name: "url" })
+  const { register, setValue } = useFormContext<ConnectionFormState>()
+  const { errors } = useFormState<ConnectionFormState>({ name: "url" })
+  const url = useWatch<ConnectionFormState>({ name: "url" })
 
   return (
     <TextField
@@ -80,9 +75,9 @@ export const URLField: React.FC = () => {
 }
 
 export const TokenField: React.FC = () => {
-  const { register, setValue } = useFormContext<ConnectionFormValues>()
-  const { errors } = useFormState<ConnectionFormValues>({ name: "token" })
-  const token = useWatch<ConnectionFormValues>({ name: "token" })
+  const { register, setValue } = useFormContext<ConnectionFormState>()
+  const { errors } = useFormState<ConnectionFormState>({ name: "token" })
+  const token = useWatch<ConnectionFormState>({ name: "token" })
 
   return (
     <TextField
@@ -119,7 +114,7 @@ export const TokenField: React.FC = () => {
 }
 
 export const ClusterURLField: React.FC = () => {
-  const { control } = useFormContext<ConnectionFormValues>()
+  const { control } = useFormContext<ConnectionFormState>()
 
   return (
     <Controller

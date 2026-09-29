@@ -1,43 +1,35 @@
 import PowerIcon from "@mui/icons-material/Power"
+import Alert from "@mui/material/Alert"
 import Box from "@mui/material/Box"
 import IconButton from "@mui/material/IconButton"
 import { useAtom } from "jotai"
 import React from "react"
 import { FormProvider, useForm } from "react-hook-form"
-import { cogniteSDK, type ConnectionState } from "../../CogniteSDK"
+import { cogniteSDK } from "../../CogniteSDK"
+import { useExternalStateDefaults, useUpdateExternalState } from "./externalState"
 import { ClusterURLFieldHelpModal, TokenFieldHelpModal, URLFieldHelpModal } from "./fieldHelpModals"
-import {
-  ClusterURLField,
-  DEFAULT_CLUSTER_URL,
-  TokenField,
-  URLField,
-  type ConnectionFormValues,
-} from "./fields"
-import Alert from "@mui/material/Alert"
-
-function getButtonColor(connectionState: ConnectionState, connectionError: Error | undefined) {
-  if (connectionState === 'connected') {
-    return 'success'
-  }
-  if (connectionState === 'disconnected' && connectionError !== undefined) {
-    return 'error'
-  }
-  return 'default'
-}
+import { ClusterURLField, DEFAULT_CLUSTER_URL, TokenField, URLField } from "./fields"
+import type { ConnectionFormState } from "./types"
 
 export const ConnectionForm: React.FC = () => {
   const [connectionState] = useAtom(cogniteSDK.state.connectionState)
   const [connectionError] = useAtom(cogniteSDK.state.connectionError)
 
-  const methods = useForm<ConnectionFormValues>({
+  const externalStateDefaults = useExternalStateDefaults()
+
+  const methods = useForm<ConnectionFormState>({
     defaultValues: {
       clusterUrl: DEFAULT_CLUSTER_URL,
       url: "",
       token: "",
+      ...externalStateDefaults,
     },
   })
 
-  const onSubmit = ({ clusterUrl, url, token }: ConnectionFormValues) => {
+  const formState = methods.watch()
+  useUpdateExternalState(formState)
+
+  const onSubmit = ({ clusterUrl, url, token }: ConnectionFormState) => {
     const urlObj = new URL(url)
     const appId = urlObj.hostname
     const project = urlObj.pathname.split('/')[1]
@@ -77,7 +69,7 @@ export const ConnectionForm: React.FC = () => {
           type="submit"
           sx={{ alignSelf: "center" }}
           title={connectionState === "connected" ? "Disconnect" : "Connect"}
-          color={getButtonColor(connectionState, connectionError)}
+          color={connectionState === "connected" ? "success" : "default"}
         >
           <PowerIcon />
         </IconButton>
