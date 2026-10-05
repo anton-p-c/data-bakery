@@ -1,8 +1,10 @@
-import { type PropertyValueGroupV3, type RawPropertyValueV3, type ViewReference } from "@cognite/sdk"
+import { CogniteError, HttpError, type PropertyValueGroupV3, type RawPropertyValueV3, type ViewReference } from "@cognite/sdk"
 import DeleteIcon from "@mui/icons-material/Delete"
 import { Box, Button, Divider, IconButton, Paper, TextField, Typography, } from "@mui/material"
+import { useState } from "react"
 import { Controller, FormProvider, useFieldArray, useForm, useFormContext, useWatch } from "react-hook-form"
-import { cogniteSDK } from "../../CogniteSDK"
+import { cogniteSDK, type CogniteSDKError } from "../../CogniteSDK"
+import { PreBox, serializeError } from "../PreBox"
 import { textFieldRegister } from "../utils"
 import { SpaceAutocomplete } from "./SpaceAutocomplete"
 import { ViewExternalIdAutocomplete } from "./ViewExternalIdAutocomplete"
@@ -222,8 +224,15 @@ const SourceProperties: React.FC<{}> = ({ }) => {
   </Box>
 }
 
+const isNetworkError = (error: unknown): error is TypeError =>
+  error instanceof TypeError
+
+const isServerError = (error: unknown): error is CogniteError | HttpError =>
+  error instanceof CogniteError || error instanceof HttpError
+
 export const CreateOrUpdateNodeForm: React.FC<{}> = ({ }) => {
-  const methods = useForm<CreateOrUpdateNodeFormState>({})
+  const formMethods = useForm<CreateOrUpdateNodeFormState>({})
+  const [upsertError, setUpsertError] = useState<CogniteSDKError>()
 
   const onSubmit = async (data: CreateOrUpdateNodeFormState) => {
     const propertiesMap: PropertyValueGroupV3 = {}
@@ -232,31 +241,44 @@ export const CreateOrUpdateNodeForm: React.FC<{}> = ({ }) => {
       propertiesMap[property.name] = property.value
     })
 
-    await cogniteSDK.api.instances.upsert({
-      items: [{
-        instanceType: "node",
-        space: data.space,
-        externalId: data.externalId,
-        sources: [{
-          source: {
-            type: "view",
-            space: data.source.reference.space,
-            externalId: data.source.reference.externalId,
-            version: data.source.reference.version,
-          },
-          properties: propertiesMap,
-        }],
-      }]
-    })
+    setUpsertError(undefined)
+
+    try {
+      await cogniteSDK.api.instances.upsert({
+        items: [{
+          instanceType: "node",
+          space: data.space,
+          externalId: data.externalId,
+          sources: [{
+            source: {
+              type: "view",
+              space: data.source.reference.space,
+              externalId: data.source.reference.externalId,
+              version: data.source.reference.version,
+            },
+            properties: propertiesMap,
+          }],
+        }]
+      })
+    } catch (error) {
+      console.error('error upserting node', error)
+
+      if (isNetworkError(error) || isServerError(error)) {
+        setUpsertError(error)
+        return
+      }
+
+      throw error
+    }
   }
 
   return (
-    <FormProvider {...methods}>
+    <FormProvider {...formMethods}>
       <Paper
         component="form"
         variant="outlined"
         aria-labelledby="create-or-update-node-title"
-        onSubmit={methods.handleSubmit(onSubmit)}
+        onSubmit={formMethods.handleSubmit(onSubmit)}
         sx={{
           display: "flex",
           flexGrow: 1,
@@ -279,8 +301,12 @@ export const CreateOrUpdateNodeForm: React.FC<{}> = ({ }) => {
         <FormDivider label="Source properties" />
         <SourceProperties />
 
+        {upsertError && <PreBox text={serializeError(upsertError)} />}
+
         <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-          <Button variant="contained" type="submit">
+          <Button variant="contained" type="submit"
+            loading={formMethods.formState.isSubmitting}
+          >
             Submit
           </Button>
         </Box>
