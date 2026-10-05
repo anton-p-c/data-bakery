@@ -19,7 +19,7 @@ export class CogniteSDK {
 
   private cogniteClient_: CogniteClient | undefined
 
-  private get cogniteClient(): CogniteClient {
+  get api(): CogniteClient {
     if (!this.cogniteClient_) {
       throw new Error('CogniteClient not initialized')
     }
@@ -58,9 +58,9 @@ export class CogniteSDK {
     try {
       store.set(this.state.connectionError, undefined)
 
-      await this.cogniteClient.authenticate()
+      await this.api.authenticate()
       // authenticate doesn't throw an error, so we need to check the error type
-      await this.cogniteClient.containers.list({ includeGlobal: true })
+      await this.api.containers.list({ includeGlobal: true })
 
       store.set(this.state.connectionState, 'connected')
     } catch (error) {

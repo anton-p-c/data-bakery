@@ -1,7 +1,8 @@
-import { type ContainerCreateDefinition, type DataModelCreate, type RawPropertyValueV3, type ViewCreateDefinition, type ViewReference } from "@cognite/sdk"
+import { type PropertyValueGroupV3, type RawPropertyValueV3, type ViewReference } from "@cognite/sdk"
 import DeleteIcon from "@mui/icons-material/Delete"
 import { Box, Button, Divider, IconButton, Paper, TextField, Typography, } from "@mui/material"
 import { FormProvider, useFieldArray, useForm, useFormContext } from "react-hook-form"
+import { cogniteSDK } from "../../CogniteSDK"
 import { textFieldRegister } from "../utils"
 
 const FormDivider: React.FC<{ label: string }> = ({ label }) => {
@@ -51,7 +52,7 @@ const NodeIdField: React.FC<{}> = ({ }) => {
   </Box>
 }
 
-const SourceIdField: React.FC<{}> = ({ }) => {
+const ViewIdField: React.FC<{}> = ({ }) => {
   "use no memo";
   const { register, formState } = useFormContext<CreateOrUpdateNodeFormState>()
 
@@ -79,6 +80,19 @@ const SourceIdField: React.FC<{}> = ({ }) => {
       {...textFieldRegister(
         register("source.reference.externalId", {
           required: "ExternalId is required",
+        }),
+      )}
+    />
+    <TextField
+      fullWidth
+      label="Version"
+      size="small"
+      autoComplete="off"
+      disabled={formState.isSubmitting}
+      error={!!formState.errors.source?.reference?.version}
+      {...textFieldRegister(
+        register("source.reference.version", {
+          required: "Version is required",
         }),
       )}
     />
@@ -144,11 +158,31 @@ const SourceProperties: React.FC<{}> = ({ }) => {
 }
 
 export const CreateOrUpdateNodeForm: React.FC<{}> = ({ }) => {
-  const methods = useForm<CreateOrUpdateNodeFormState>({ })
+  const methods = useForm<CreateOrUpdateNodeFormState>({})
 
-  const onSubmit = (data: CreateOrUpdateNodeFormState) => {
-    // cogniteSDK.createOrUpdateNode(data)
-    console.log('submitting', data)
+  const onSubmit = async (data: CreateOrUpdateNodeFormState) => {
+    const propertiesMap: PropertyValueGroupV3 = {}
+
+    data.source.properties.forEach((property) => {
+      propertiesMap[property.name] = property.value
+    })
+
+    await cogniteSDK.api.instances.upsert({
+      items: [{
+        instanceType: "node",
+        space: data.space,
+        externalId: data.externalId,
+        sources: [{
+          source: {
+            type: "view",
+            space: data.source.reference.space,
+            externalId: data.source.reference.externalId,
+            version: data.source.reference.version,
+          },
+          properties: propertiesMap,
+        }],
+      }]
+    })
   }
 
   return (
@@ -175,7 +209,7 @@ export const CreateOrUpdateNodeForm: React.FC<{}> = ({ }) => {
         <NodeIdField />
 
         <FormDivider label="Source" />
-        <SourceIdField />
+        <ViewIdField />
 
         <FormDivider label="Source properties" />
         <SourceProperties />
