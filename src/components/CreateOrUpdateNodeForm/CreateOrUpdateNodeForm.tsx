@@ -1,9 +1,12 @@
 import { type PropertyValueGroupV3, type RawPropertyValueV3, type ViewReference } from "@cognite/sdk"
 import DeleteIcon from "@mui/icons-material/Delete"
 import { Box, Button, Divider, IconButton, Paper, TextField, Typography, } from "@mui/material"
-import { FormProvider, useFieldArray, useForm, useFormContext } from "react-hook-form"
+import { Controller, FormProvider, useFieldArray, useForm, useFormContext, useWatch } from "react-hook-form"
 import { cogniteSDK } from "../../CogniteSDK"
 import { textFieldRegister } from "../utils"
+import { SpaceAutocomplete } from "./SpaceAutocomplete"
+import { ViewExternalIdAutocomplete } from "./ViewExternalIdAutocomplete"
+import { ViewVersionAutocomplete } from "./ViewVersionAutocomplete"
 
 const FormDivider: React.FC<{ label: string }> = ({ label }) => {
   return <Divider><Typography variant="subtitle1">{label}</Typography></Divider>
@@ -54,46 +57,108 @@ const NodeIdField: React.FC<{}> = ({ }) => {
 
 const ViewIdField: React.FC<{}> = ({ }) => {
   "use no memo";
-  const { register, formState } = useFormContext<CreateOrUpdateNodeFormState>()
+  const { control, formState } = useFormContext<CreateOrUpdateNodeFormState>()
+  const sourceSpace = useWatch({ control, name: "source.reference.space" })
+  const sourceExternalId = useWatch({ control, name: "source.reference.externalId" })
 
   return <Box sx={{ display: "flex", gap: 1 }}>
-    <TextField
-      fullWidth
-      label="space"
-      size="small"
-      autoComplete="off"
-      disabled={formState.isSubmitting}
-      error={!!formState.errors.source?.reference?.space}
-      {...textFieldRegister(
-        register("source.reference.space", {
-          required: "Space is required",
-        }),
+    <Controller
+      name="source.reference.space"
+      control={control}
+      rules={{ required: "Space is required" }}
+      render={({ field, fieldState: { error } }) => (
+        <SpaceAutocomplete
+          fullWidth
+          disabled={formState.isSubmitting}
+          value={field.value ?? ""}
+          inputValue={field.value ?? ""}
+          onChange={(_event, option) => {
+            field.onChange(option == null ? "" : typeof option === "string" ? option : option.space)
+          }}
+          onInputChange={(_event, inputValue, reason) => {
+            if (reason === "input" || reason === "clear") {
+              field.onChange(inputValue)
+            }
+          }}
+          getOptionLabel={(option) => (typeof option === "string" ? option : option.space)}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="space"
+              size="small"
+              autoComplete="off"
+              error={!!error}
+              inputRef={field.ref}
+            />
+          )}
+        />
       )}
     />
-    <TextField
-      fullWidth
-      label="ExternalId"
-      size="small"
-      autoComplete="off"
-      disabled={formState.isSubmitting}
-      error={!!formState.errors.source?.reference?.externalId}
-      {...textFieldRegister(
-        register("source.reference.externalId", {
-          required: "ExternalId is required",
-        }),
+    <Controller
+      name="source.reference.externalId"
+      control={control}
+      rules={{ required: "ExternalId is required" }}
+      render={({ field, fieldState: { error } }) => (
+        <ViewExternalIdAutocomplete
+          fullWidth
+          space={sourceSpace || undefined}
+          disabled={formState.isSubmitting || !sourceSpace}
+          value={field.value ?? ""}
+          inputValue={field.value ?? ""}
+          onChange={(_event, option) => {
+            field.onChange(option == null ? "" : typeof option === "string" ? option : option.externalId)
+          }}
+          onInputChange={(_event, inputValue, reason) => {
+            if (reason === "input" || reason === "clear") {
+              field.onChange(inputValue)
+            }
+          }}
+          getOptionLabel={(option) => (typeof option === "string" ? option : option.externalId)}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="ExternalId"
+              size="small"
+              autoComplete="off"
+              error={!!error}
+              inputRef={field.ref}
+            />
+          )}
+        />
       )}
     />
-    <TextField
-      fullWidth
-      label="Version"
-      size="small"
-      autoComplete="off"
-      disabled={formState.isSubmitting}
-      error={!!formState.errors.source?.reference?.version}
-      {...textFieldRegister(
-        register("source.reference.version", {
-          required: "Version is required",
-        }),
+    <Controller
+      name="source.reference.version"
+      control={control}
+      rules={{ required: "Version is required" }}
+      render={({ field, fieldState: { error } }) => (
+        <ViewVersionAutocomplete
+          fullWidth
+          space={sourceSpace || undefined}
+          viewExternalId={sourceExternalId || undefined}
+          disabled={formState.isSubmitting || !sourceSpace || !sourceExternalId}
+          value={field.value ?? ""}
+          inputValue={field.value ?? ""}
+          onChange={(_event, option) => {
+            field.onChange(option == null ? "" : typeof option === "string" ? option : option.version)
+          }}
+          onInputChange={(_event, inputValue, reason) => {
+            if (reason === "input" || reason === "clear") {
+              field.onChange(inputValue)
+            }
+          }}
+          getOptionLabel={(option) => (typeof option === "string" ? option : option.version)}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Version"
+              size="small"
+              autoComplete="off"
+              error={!!error}
+              inputRef={field.ref}
+            />
+          )}
+        />
       )}
     />
   </Box>
@@ -197,7 +262,7 @@ export const CreateOrUpdateNodeForm: React.FC<{}> = ({ }) => {
           flexGrow: 1,
           flexDirection: "column",
           gap: 1,
-          width: '400px',
+          width: '500px',
           p: 2,
           borderRadius: 2,
         }}
