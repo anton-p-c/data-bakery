@@ -7,11 +7,10 @@ import CssBaseline from '@mui/material/CssBaseline'
 import Drawer from '@mui/material/Drawer'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import { cogniteSDK } from './CogniteSDK'
-import React from 'react'
 import { Provider } from 'jotai'
-import { store } from './store'
 import { ConnectionForm } from './components/ConnectionForm'
+import { CreateOrUpdateNodeForm } from './components/CreateOrUpdateNodeForm'
+import { store } from './store'
 
 const LEFT_SIDEBAR_WIDTH = 280
 const RIGHT_SIDEBAR_WIDTH = 420
@@ -63,7 +62,7 @@ function App() {
             }}
           >
             <Typography variant="h6" gutterBottom>
-              Center
+              <CreateOrUpdateNodeForm />
             </Typography>
           </Box>
 

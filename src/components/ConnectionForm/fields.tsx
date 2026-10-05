@@ -3,22 +3,17 @@ import Autocomplete from "@mui/material/Autocomplete"
 import IconButton from "@mui/material/IconButton"
 import InputAdornment from "@mui/material/InputAdornment"
 import TextField from "@mui/material/TextField"
+import { useAtom } from "jotai"
 import React from "react"
 import {
   Controller,
   useFormContext,
   useFormState,
-  useWatch,
-  type UseFormRegisterReturn,
+  useWatch
 } from "react-hook-form"
-import type { ConnectionFormState } from "./types"
-import { useAtom } from "jotai"
 import { cogniteSDK } from "../../CogniteSDK"
-
-const textFieldRegister = ({ ref, ...rest }: UseFormRegisterReturn) => ({
-  ...rest,
-  inputRef: ref,
-})
+import { textFieldRegister } from "../utils"
+import type { ConnectionFormState } from "./types"
 
 function useCogniteSDKIsBusy() {
   const [connectionState] = useAtom(cogniteSDK.state.connectionState)
