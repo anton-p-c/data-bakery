@@ -79,4 +79,5 @@ export class CogniteSDK {
 }
 
 export const cogniteSDK = new CogniteSDK()
+// @ts-ignore
 window.cogniteSDK = cogniteSDK
