@@ -28,6 +28,20 @@ type CreateOrUpdateNodeFormState = {
   },
 }
 
+const defaultFormState: CreateOrUpdateNodeFormState = {
+  space: "",
+  externalId: "",
+  source: {
+    reference: {
+      type: "view",
+      space: "",
+      externalId: "",
+      version: "",
+    },
+    properties: [],
+  },
+}
+
 const NodeIdField: React.FC<{}> = ({ }) => {
   "use no memo";
   const formMethods = useFormContext<CreateOrUpdateNodeFormState>()
@@ -209,11 +223,9 @@ const SourcePropertyFields: React.FC<{}> = ({ }) => {
   const formIsNotAccessible = getFormIsNotAccessible(formMethods.formState)
 
   return <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-    {(
-      viewReference === undefined ||
-      viewReference.space === undefined ||
-      viewReference.externalId === undefined ||
-      viewReference.version === undefined
+    {(!Boolean(viewReference.space) ||
+      !Boolean(viewReference.externalId) ||
+      !Boolean(viewReference.version)
     ) && fields.length === 0 && <Typography sx={{ alignSelf: "center" }} variant="body2" color="textSecondary">Select a source to populate properties</Typography>}
 
     {fields.map((field, idx) => (
@@ -223,27 +235,26 @@ const SourcePropertyFields: React.FC<{}> = ({ }) => {
           label="Name"
           size="small"
           autoComplete="off"
-          disabled
           error={!!formMethods.formState.errors.source?.properties?.[idx]?.name}
           {...textFieldRegister(
             formMethods.register(`source.properties.${idx}.name`, {
               required: "Name is required",
-              disabled: true
             }),
           )}
+          disabled
         />
         <TextField
           fullWidth
           label="Value"
           size="small"
           autoComplete="off"
-          disabled={field.disabled || formIsNotAccessible}
           error={!!formMethods.formState.errors.source?.properties?.[idx]?.value}
           {...textFieldRegister(
             formMethods.register(`source.properties.${idx}.value`, {
               required: "Value is required",
             }),
           )}
+          disabled={field.disabled || formIsNotAccessible}
         />
       </Box>
     ))}
@@ -268,10 +279,9 @@ function usePopulateViewProperties(formMethods: UseFormReturn<CreateOrUpdateNode
       exact: true,
       callback: (changed) => {
         const viewReference = changed.values.source.reference
-        if (viewReference &&
-          viewReference.space !== undefined &&
-          viewReference.externalId !== undefined &&
-          viewReference.version !== undefined &&
+        if (Boolean(viewReference.space) &&
+          Boolean(viewReference.externalId) &&
+          Boolean(viewReference.version) &&
           formMethods.getValues("source.properties").length === 0
         ) {
           void cogniteSDK.api.views.retrieve([{
@@ -311,10 +321,10 @@ function usePopulateViewProperties(formMethods: UseFormReturn<CreateOrUpdateNode
 
 export const CreateOrUpdateNodeForm: React.FC<{}> = ({ }) => {
   "use no memo";
-
   const [connectionState] = useAtom(cogniteSDK.state.connectionState)
 
   const formMethods = useForm<CreateOrUpdateNodeFormState>({
+    defaultValues: defaultFormState,
     disabled: connectionState !== "connected",
   })
   const [upsertError, setUpsertError] = useState<CogniteSDKError>()
