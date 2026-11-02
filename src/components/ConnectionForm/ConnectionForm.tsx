@@ -19,7 +19,7 @@ export const ConnectionForm: React.FC = () => {
 
   const externalStateDefaults = useExternalStateDefaults()
 
-  const methods = useForm<ConnectionFormState>({
+  const formMethods = useForm<ConnectionFormState>({
     defaultValues: {
       clusterUrl: DEFAULT_CLUSTER_URL,
       url: "",
@@ -29,7 +29,7 @@ export const ConnectionForm: React.FC = () => {
     disabled: isCogniteSDKBusy,
   })
 
-  const formState = methods.watch()
+  const formState = formMethods.watch()
   useUpdateExternalState(formState)
 
   const onSubmit = ({ clusterUrl, url, token }: ConnectionFormState) => {
@@ -46,10 +46,10 @@ export const ConnectionForm: React.FC = () => {
   }
 
   return (
-    <FormProvider {...methods}>
+    <FormProvider {...formMethods}>
       <Box
         component="form"
-        onSubmit={methods.handleSubmit(onSubmit)}
+        onSubmit={formMethods.handleSubmit(onSubmit)}
         sx={{
           display: "flex",
           flexGrow: 1,

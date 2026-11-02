@@ -2,13 +2,18 @@ import { CogniteError, HttpError, type PropertyValueGroupV3, type RawPropertyVal
 import DeleteIcon from "@mui/icons-material/Delete"
 import { Box, Button, Divider, IconButton, Paper, TextField, Typography, } from "@mui/material"
 import { useState } from "react"
-import { Controller, FormProvider, useFieldArray, useForm, useFormContext, useWatch } from "react-hook-form"
+import { Controller, FormProvider, useFieldArray, useForm, useFormContext, useWatch, type FieldValues, type UseFormStateReturn } from "react-hook-form"
 import { cogniteSDK, type CogniteSDKError } from "../../CogniteSDK"
 import { PreBox, serializeError } from "../PreBox"
 import { textFieldRegister } from "../utils"
 import { SpaceAutocomplete } from "./SpaceAutocomplete"
 import { ViewExternalIdAutocomplete } from "./ViewExternalIdAutocomplete"
 import { ViewVersionAutocomplete } from "./ViewVersionAutocomplete"
+import { useAtom } from "jotai"
+
+function getFormIsNotAccessible(formState: UseFormStateReturn<FieldValues>) {
+  return formState.isSubmitting || formState.disabled
+}
 
 const FormDivider: React.FC<{ label: string }> = ({ label }) => {
   return <Divider><Typography variant="subtitle1">{label}</Typography></Divider>
@@ -25,7 +30,8 @@ type CreateOrUpdateNodeFormState = {
 
 const NodeIdField: React.FC<{}> = ({ }) => {
   "use no memo";
-  const { register, formState } = useFormContext<CreateOrUpdateNodeFormState>()
+  const formMethods = useFormContext<CreateOrUpdateNodeFormState>()
+  const formIsNotAccessible = getFormIsNotAccessible(formMethods.formState)
 
   return <Box sx={{ display: "flex", gap: 1 }}>
     <TextField
@@ -33,10 +39,10 @@ const NodeIdField: React.FC<{}> = ({ }) => {
       label="space"
       size="small"
       autoComplete="off"
-      disabled={formState.isSubmitting}
-      error={!!formState.errors.space}
+      disabled={formIsNotAccessible}
+      error={!!formMethods.formState.errors.space}
       {...textFieldRegister(
-        register("space", {
+        formMethods.register("space", {
           required: "Space is required",
         }),
       )}
@@ -46,10 +52,10 @@ const NodeIdField: React.FC<{}> = ({ }) => {
       label="ExternalId"
       size="small"
       autoComplete="off"
-      disabled={formState.isSubmitting}
-      error={!!formState.errors.externalId}
+      disabled={formIsNotAccessible}
+      error={!!formMethods.formState.errors.externalId}
       {...textFieldRegister(
-        register("externalId", {
+        formMethods.register("externalId", {
           required: "ExternalId is required",
         }),
       )}
@@ -57,21 +63,23 @@ const NodeIdField: React.FC<{}> = ({ }) => {
   </Box>
 }
 
-const ViewIdField: React.FC<{}> = ({ }) => {
+const ViewIdFields: React.FC<{}> = ({ }) => {
   "use no memo";
-  const { control, formState } = useFormContext<CreateOrUpdateNodeFormState>()
-  const sourceSpace = useWatch({ control, name: "source.reference.space" })
-  const sourceExternalId = useWatch({ control, name: "source.reference.externalId" })
+  const formMethods = useFormContext<CreateOrUpdateNodeFormState>()
+  const sourceSpace = useWatch({ control: formMethods.control, name: "source.reference.space" })
+  const sourceExternalId = useWatch({ control: formMethods.control, name: "source.reference.externalId" })
+
+  const formIsNotAccessible = getFormIsNotAccessible(formMethods.formState)
 
   return <Box sx={{ display: "flex", gap: 1 }}>
     <Controller
       name="source.reference.space"
-      control={control}
+      control={formMethods.control}
       rules={{ required: "Space is required" }}
       render={({ field, fieldState: { error } }) => (
         <SpaceAutocomplete
           fullWidth
-          disabled={formState.isSubmitting}
+          disabled={field.disabled || formMethods.formState.isSubmitting}
           value={field.value ?? ""}
           inputValue={field.value ?? ""}
           onChange={(_event, option) => {
@@ -98,13 +106,13 @@ const ViewIdField: React.FC<{}> = ({ }) => {
     />
     <Controller
       name="source.reference.externalId"
-      control={control}
+      control={formMethods.control}
       rules={{ required: "ExternalId is required" }}
       render={({ field, fieldState: { error } }) => (
         <ViewExternalIdAutocomplete
           fullWidth
           space={sourceSpace || undefined}
-          disabled={formState.isSubmitting || !sourceSpace}
+          disabled={field.disabled || formIsNotAccessible || !sourceSpace}
           value={field.value ?? ""}
           inputValue={field.value ?? ""}
           onChange={(_event, option) => {
@@ -131,14 +139,14 @@ const ViewIdField: React.FC<{}> = ({ }) => {
     />
     <Controller
       name="source.reference.version"
-      control={control}
+      control={formMethods.control}
       rules={{ required: "Version is required" }}
       render={({ field, fieldState: { error } }) => (
         <ViewVersionAutocomplete
           fullWidth
           space={sourceSpace || undefined}
           viewExternalId={sourceExternalId || undefined}
-          disabled={formState.isSubmitting || !sourceSpace || !sourceExternalId}
+          disabled={field.disabled || formIsNotAccessible || !sourceSpace || !sourceExternalId}
           value={field.value ?? ""}
           inputValue={field.value ?? ""}
           onChange={(_event, option) => {
@@ -166,7 +174,7 @@ const ViewIdField: React.FC<{}> = ({ }) => {
   </Box>
 }
 
-const SourceProperties: React.FC<{}> = ({ }) => {
+const SourcePropertyFields: React.FC<{}> = ({ }) => {
   "use no memo";
   const formMethods = useFormContext<CreateOrUpdateNodeFormState>();
   const { fields, append, remove } = useFieldArray<CreateOrUpdateNodeFormState, "source.properties">({
@@ -174,15 +182,17 @@ const SourceProperties: React.FC<{}> = ({ }) => {
     name: "source.properties",
   });
 
+  const formIsNotAccessible = getFormIsNotAccessible(formMethods.formState)
+
   return <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-    {fields.map((fields, idx) => (
+    {fields.map((field, idx) => (
       <Box sx={{ display: "flex", gap: 1 }}>
         <TextField
           fullWidth
           label="Name"
           size="small"
           autoComplete="off"
-          disabled={formMethods.formState.isSubmitting}
+          disabled={field.disabled || formIsNotAccessible}
           error={!!formMethods.formState.errors.source?.properties?.[idx]?.name}
           {...textFieldRegister(
             formMethods.register(`source.properties.${idx}.name`, {
@@ -195,7 +205,7 @@ const SourceProperties: React.FC<{}> = ({ }) => {
           label="Value"
           size="small"
           autoComplete="off"
-          disabled={formMethods.formState.isSubmitting}
+          disabled={field.disabled || formIsNotAccessible}
           error={!!formMethods.formState.errors.source?.properties?.[idx]?.value}
           {...textFieldRegister(
             formMethods.register(`source.properties.${idx}.value`, {
@@ -216,6 +226,7 @@ const SourceProperties: React.FC<{}> = ({ }) => {
       variant="outlined"
       type="button"
       aria-label="Add property"
+      disabled={formIsNotAccessible}
       onClick={() => append({ name: '', value: '' })}
       sx={{ alignSelf: "stretch" }}
     >
@@ -231,8 +242,14 @@ const isServerError = (error: unknown): error is CogniteError | HttpError =>
   error instanceof CogniteError || error instanceof HttpError
 
 export const CreateOrUpdateNodeForm: React.FC<{}> = ({ }) => {
-  const formMethods = useForm<CreateOrUpdateNodeFormState>({})
+  const [connectionState] = useAtom(cogniteSDK.state.connectionState)
+
+  const formMethods = useForm<CreateOrUpdateNodeFormState>({
+    disabled: connectionState !== "connected",
+  })
   const [upsertError, setUpsertError] = useState<CogniteSDKError>()
+
+  const formIsNotAccessible = getFormIsNotAccessible(formMethods.formState)
 
   const onSubmit = async (data: CreateOrUpdateNodeFormState) => {
     const propertiesMap: PropertyValueGroupV3 = {}
@@ -296,16 +313,19 @@ export const CreateOrUpdateNodeForm: React.FC<{}> = ({ }) => {
         <NodeIdField />
 
         <FormDivider label="Source" />
-        <ViewIdField />
+        <ViewIdFields />
 
         <FormDivider label="Source properties" />
-        <SourceProperties />
+        <SourcePropertyFields />
 
         {upsertError && <PreBox text={serializeError(upsertError)} />}
 
         <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-          <Button variant="contained" type="submit"
+          <Button
+            variant="contained"
+            type="submit"
             loading={formMethods.formState.isSubmitting}
+            disabled={formIsNotAccessible}
           >
             Submit
           </Button>
