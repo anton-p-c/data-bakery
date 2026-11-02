@@ -1,6 +1,7 @@
 import PowerIcon from "@mui/icons-material/Power"
+import PowerOffIcon from "@mui/icons-material/PowerOff"
 import Box from "@mui/material/Box"
-import IconButton from "@mui/material/IconButton"
+import Button from "@mui/material/Button"
 import { useAtom } from "jotai"
 import React from "react"
 import { FormProvider, useForm } from "react-hook-form"
@@ -72,14 +73,16 @@ export const ConnectionForm: React.FC = () => {
           <ClusterURLFieldHelpModal />
         </Box>
 
-        <IconButton
+        <Button
           type="submit"
-          sx={{ alignSelf: "center" }}
-          title={connectionState === "connected" ? "Disconnect" : "Connect"}
-          color={connectionState === "connected" ? "success" : "default"}
+          variant={connectionState === "disconnected" ? "contained" : "outlined"}
+          endIcon={connectionState === "connected" ? <PowerOffIcon /> : <PowerIcon />}
+          title="Connect"
+          loading={connectionState === "connecting"}
         >
-          <PowerIcon />
-        </IconButton>
+          {connectionState === "connected" && "Disconnect"}
+          {connectionState === "disconnected" && "Connect"}
+        </Button>
 
         {connectionError && <ConnectionErrorInfo error={connectionError} />}
       </Box>

@@ -10,10 +10,7 @@ import { SpaceAutocomplete } from "./SpaceAutocomplete"
 import { ViewExternalIdAutocomplete } from "./ViewExternalIdAutocomplete"
 import { ViewVersionAutocomplete } from "./ViewVersionAutocomplete"
 import { useAtom } from "jotai"
-
-function getFormIsNotAccessible(formState: UseFormStateReturn<FieldValues>) {
-  return formState.isSubmitting || formState.disabled
-}
+import { getFormIsNotAccessible } from "../formUtils"
 
 const FormDivider: React.FC<{ label: string }> = ({ label }) => {
   return <Divider><Typography variant="subtitle1">{label}</Typography></Divider>
