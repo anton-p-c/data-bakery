@@ -1,16 +1,15 @@
 import { CogniteError, HttpError, type PropertyValueGroupV3, type RawPropertyValueV3, type ViewReference } from "@cognite/sdk"
-import DeleteIcon from "@mui/icons-material/Delete"
-import { Box, Button, Divider, IconButton, Paper, TextField, Typography, } from "@mui/material"
-import { useState } from "react"
-import { Controller, FormProvider, useFieldArray, useForm, useFormContext, useWatch, type FieldValues, type UseFormStateReturn } from "react-hook-form"
+import { Box, Button, Divider, Paper, TextField, Typography } from "@mui/material"
+import { useAtom } from "jotai"
+import React, { useEffect, useState } from "react"
+import { Controller, FormProvider, useFieldArray, useForm, useFormContext, useWatch, type UseFormReturn } from "react-hook-form"
 import { cogniteSDK, type CogniteSDKError } from "../../CogniteSDK"
+import { getFormIsNotAccessible } from "../formUtils"
 import { PreBox, serializeError } from "../PreBox"
 import { textFieldRegister } from "../utils"
 import { SpaceAutocomplete } from "./SpaceAutocomplete"
 import { ViewExternalIdAutocomplete } from "./ViewExternalIdAutocomplete"
 import { ViewVersionAutocomplete } from "./ViewVersionAutocomplete"
-import { useAtom } from "jotai"
-import { getFormIsNotAccessible } from "../formUtils"
 
 const FormDivider: React.FC<{ label: string }> = ({ label }) => {
   return <Divider><Typography variant="subtitle1">{label}</Typography></Divider>
@@ -21,7 +20,11 @@ type CreateOrUpdateNodeFormState = {
   externalId: string,
   source: {
     reference: ViewReference,
-    properties: { name: string, value: RawPropertyValueV3 }[],
+    properties: {
+      name: string,
+      value: RawPropertyValueV3,
+      nullable: boolean,
+    }[],
   },
 }
 
@@ -60,13 +63,35 @@ const NodeIdField: React.FC<{}> = ({ }) => {
   </Box>
 }
 
-const ViewIdFields: React.FC<{}> = ({ }) => {
+function useResetViewReferenceFields(formMethods: UseFormReturn<CreateOrUpdateNodeFormState, any, CreateOrUpdateNodeFormState>) {
+  useEffect(() => {
+    return formMethods.subscribe({
+      name: [
+        "source.reference.space",
+        "source.reference.externalId",
+      ],
+      formState: { values: true },
+      exact: true,
+      callback: (changed) => {
+        if (changed.name === "source.reference.space") {
+          formMethods.resetField("source.reference.externalId")
+        } else if (changed.name === "source.reference.externalId") {
+          formMethods.resetField("source.reference.version")
+        }
+      },
+    })
+  }, [formMethods])
+}
+
+const ViewReferenceFields: React.FC<{}> = ({ }) => {
   "use no memo";
   const formMethods = useFormContext<CreateOrUpdateNodeFormState>()
   const sourceSpace = useWatch({ control: formMethods.control, name: "source.reference.space" })
   const sourceExternalId = useWatch({ control: formMethods.control, name: "source.reference.externalId" })
 
   const formIsNotAccessible = getFormIsNotAccessible(formMethods.formState)
+
+  useResetViewReferenceFields(formMethods)
 
   return <Box sx={{ display: "flex", gap: 1 }}>
     <Controller
@@ -174,14 +199,23 @@ const ViewIdFields: React.FC<{}> = ({ }) => {
 const SourcePropertyFields: React.FC<{}> = ({ }) => {
   "use no memo";
   const formMethods = useFormContext<CreateOrUpdateNodeFormState>();
-  const { fields, append, remove } = useFieldArray<CreateOrUpdateNodeFormState, "source.properties">({
+  const { fields } = useFieldArray<CreateOrUpdateNodeFormState, "source.properties">({
     control: formMethods.control,
     name: "source.properties",
   });
 
+  const viewReference = useWatch({ control: formMethods.control, name: "source.reference" })
+
   const formIsNotAccessible = getFormIsNotAccessible(formMethods.formState)
 
   return <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+    {(
+      viewReference === undefined ||
+      viewReference.space === undefined ||
+      viewReference.externalId === undefined ||
+      viewReference.version === undefined
+    ) && fields.length === 0 && <Typography sx={{ alignSelf: "center" }} variant="body2" color="textSecondary">Select a source to populate properties</Typography>}
+
     {fields.map((field, idx) => (
       <Box sx={{ display: "flex", gap: 1 }}>
         <TextField
@@ -189,11 +223,12 @@ const SourcePropertyFields: React.FC<{}> = ({ }) => {
           label="Name"
           size="small"
           autoComplete="off"
-          disabled={field.disabled || formIsNotAccessible}
+          disabled
           error={!!formMethods.formState.errors.source?.properties?.[idx]?.name}
           {...textFieldRegister(
             formMethods.register(`source.properties.${idx}.name`, {
               required: "Name is required",
+              disabled: true
             }),
           )}
         />
@@ -210,25 +245,8 @@ const SourcePropertyFields: React.FC<{}> = ({ }) => {
             }),
           )}
         />
-        <IconButton
-          type="button"
-          aria-label="Remove property"
-          onClick={() => remove(idx)}
-        >
-          <DeleteIcon />
-        </IconButton>
       </Box>
     ))}
-    <Button
-      variant="outlined"
-      type="button"
-      aria-label="Add property"
-      disabled={formIsNotAccessible}
-      onClick={() => append({ name: '', value: '' })}
-      sx={{ alignSelf: "stretch" }}
-    >
-      Add property
-    </Button>
   </Box>
 }
 
@@ -238,7 +256,62 @@ const isNetworkError = (error: unknown): error is TypeError =>
 const isServerError = (error: unknown): error is CogniteError | HttpError =>
   error instanceof CogniteError || error instanceof HttpError
 
+function usePopulateViewProperties(formMethods: UseFormReturn<CreateOrUpdateNodeFormState, any, CreateOrUpdateNodeFormState>) {
+  "use no memo";
+
+  React.useEffect(() => {
+    return formMethods.subscribe({
+      name: [
+        "source.reference.version",
+      ],
+      formState: { values: true },
+      exact: true,
+      callback: (changed) => {
+        const viewReference = changed.values.source.reference
+        if (viewReference &&
+          viewReference.space !== undefined &&
+          viewReference.externalId !== undefined &&
+          viewReference.version !== undefined &&
+          formMethods.getValues("source.properties").length === 0
+        ) {
+          void cogniteSDK.api.views.retrieve([{
+            space: viewReference.space,
+            externalId: viewReference.externalId,
+            version: viewReference.version,
+          }]).then((views) => {
+            const view = views.items[0]
+
+            formMethods.setValue(
+              "source.properties",
+              Object.entries(view.properties).flatMap(([name, property]) => {
+                if (!("containerPropertyIdentifier" in property)) {
+                  return []
+                }
+
+                return [{
+                  name,
+                  value: property.defaultValue ?? "",
+                  nullable: property.nullable ?? true,
+                }]
+              }),
+            )
+          }).catch((error) => {
+            formMethods.setError("root", { message: error.message })
+          })
+        } else {
+          formMethods.setValue(
+            "source.properties",
+            [],
+          )
+        }
+      },
+    })
+  }, [formMethods])
+}
+
 export const CreateOrUpdateNodeForm: React.FC<{}> = ({ }) => {
+  "use no memo";
+
   const [connectionState] = useAtom(cogniteSDK.state.connectionState)
 
   const formMethods = useForm<CreateOrUpdateNodeFormState>({
@@ -247,6 +320,8 @@ export const CreateOrUpdateNodeForm: React.FC<{}> = ({ }) => {
   const [upsertError, setUpsertError] = useState<CogniteSDKError>()
 
   const formIsNotAccessible = getFormIsNotAccessible(formMethods.formState)
+
+  usePopulateViewProperties(formMethods)
 
   const onSubmit = async (data: CreateOrUpdateNodeFormState) => {
     const propertiesMap: PropertyValueGroupV3 = {}
@@ -310,7 +385,7 @@ export const CreateOrUpdateNodeForm: React.FC<{}> = ({ }) => {
         <NodeIdField />
 
         <FormDivider label="Source" />
-        <ViewIdFields />
+        <ViewReferenceFields />
 
         <FormDivider label="Source properties" />
         <SourcePropertyFields />
